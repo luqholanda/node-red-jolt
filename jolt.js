@@ -1,12 +1,15 @@
-const util = require('util');
-const exec = util.promisify(require('child_process').exec);
-const fs = require('fs');
+const util = require("util");
+const exec = util.promisify(require("child_process").exec);
+const fs = require("fs");
+const os = require("os");
+const tempDir = os.tmpdir();
 
-var inputFile = '/home/lucas/.node-red/node_modules/node-red-jolt/bin/input.json';
-var specFile = '/home/lucas/.node-red/node_modules/node-red-jolt/bin/spec.json';
+var inputFile = `${tempDir}/input.json`;
+var specFile = `${tempDir}/spec.json`;
+var jarFile = `${__dirname}/bin/jolt-cli-0.1.6-SNAPSHOT.jar`;
 
 async function execJar() {
-    return await exec('java -jar /home/lucas/.node-red/node_modules/node-red-jolt/bin/jolt-cli-0.1.6-SNAPSHOT.jar transform ' + specFile + ' ' + inputFile)
+    return await exec(`java -jar ${jarFile} transform ${specFile} ${inputFile}`)
         .then(stdout => stdout.stdout)
         .catch(error => error);
 }
@@ -16,51 +19,63 @@ async function getJarResult() {
     return resultado;
 }
 
-module.exports = function(RED) {
+module.exports = function (RED) {
     function Jolt(config) {
         RED.nodes.createNode(this, config);
 
         this.joltEditor = config.joltEditor;
 
         let node = this;
-        node.on('input', function(msg) {
+        node.on("input", function (msg) {
             var payloadJson = msg[config.jsonvar];
 
-            if (typeof payloadJson != 'string') {
+            if (typeof payloadJson != "string") {
                 payloadJson = JSON.stringify(payloadJson);
             }
 
             try {
                 JSON.parse(payloadJson);
             } catch (e) {
-
-                var error = {
-                    "message": "Your payload isn't a Json Object",
-                    "source": {
-                        "id": config._msgid,
-                        "type": "function",
-                        "name": "Jolt",
-                    }
-                };
-
-                msg.error = error;
+                msg.error = createErrorMessage(config, "Your payload isn't a Json Object");
                 node.send(msg);
-                return ;
+                return;
             }
 
             fs.writeFileSync(inputFile, payloadJson);
             fs.writeFileSync(specFile, config.joltEditor);
 
-            Promise.resolve(getJarResult()).then(function (value)
-            {
-                msg.payload = JSON.parse(value);
+            Promise.resolve(getJarResult()).then(function (value) {
+                
+                try {
+                    
+                    if (value.stdout != null && value.stdout.indexOf("RuntimeException") >= 0) {
+                        throw value.stdout;
+                    }
+
+                    msg.payload = JSON.parse(value);
+                } catch (e) {
+                    msg.error = createErrorMessage(config, e);
+                    node.send(msg);
+                }
+
                 node.send(msg);
-            }, function (value)
-            {
-                console.log(value);
+            }, function (value) {
+                msg.status = createErrorMessage(config, value);
+                node.send(msg);
             });
         });
     }
-    
+
+    function createErrorMessage(config, message) {
+        return error = {
+            "message": message,
+            "source": {
+                "id": config.id,
+                "type": "function",
+                "name": "Jolt",
+            }
+        };
+    }
+
     RED.nodes.registerType("jolt", Jolt);
 }
