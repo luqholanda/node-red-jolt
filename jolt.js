@@ -19,6 +19,17 @@ async function getJarResult() {
     return resultado;
 }
 
+function createErrorMessage(config, message) {
+    return error = {
+        "message": message,
+        "source": {
+            "id": config.id,
+            "type": "function",
+            "name": "Jolt",
+        }
+    };
+}
+
 module.exports = function (RED) {
     function Jolt(config) {
         RED.nodes.createNode(this, config);
@@ -52,10 +63,11 @@ module.exports = function (RED) {
                         throw value.stdout;
                     }
 
+                    msg.payloadPreTransform = value;
                     msg.payload = JSON.parse(value);
+
                 } catch (e) {
                     msg.error = createErrorMessage(config, e);
-                    node.send(msg);
                 }
 
                 node.send(msg);
@@ -64,17 +76,6 @@ module.exports = function (RED) {
                 node.send(msg);
             });
         });
-    }
-
-    function createErrorMessage(config, message) {
-        return error = {
-            "message": message,
-            "source": {
-                "id": config.id,
-                "type": "function",
-                "name": "Jolt",
-            }
-        };
     }
 
     RED.nodes.registerType("jolt", Jolt);
