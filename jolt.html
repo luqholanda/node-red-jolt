@@ -1,0 +1,71 @@
+<script type="text/javascript">
+    RED.nodes.registerType('jolt', {
+        category: 'function',
+        color: '#F3B567',
+        defaults: {
+            jsonvar: {
+                value: "payload"
+            },
+            joltEditor: {
+                value: this.editorText
+            }
+        },
+        inputs: 1,
+        outputs: 1,
+        align: "left",
+        icon: "jolt.svg",
+        label: function() {
+            return this.jolt||"jolt";
+        },
+        oneditprepare: function() {
+            this.editorText = "[\n"
+                + "\t{\n"
+                + "\t\t\"operation\": \"shift\",\n"
+                + "\t\t\"spec\": {\n"
+                + "\t\t\t\"*\": \"&\"\n"
+                + "\t\t}\n"
+                + "\t}\n"
+                + "]";
+
+            if ($('#node-input-joltEditor').val() != null) {
+                this.editorText = $('#node-input-joltEditor').val();
+            }
+
+            this.editor = RED.editor.createEditor({
+                id: 'node-input-joltEditor',
+                mode: 'ace/mode/json',
+                value: this.editorText
+            });
+
+            $("#node-input-jsonvar").typedInput({
+                type: "msg",
+                types: ["msg", "flow","global"],
+                typeField: "#node-input-jsonvar-type",
+            })
+        },
+        oneditsave: function() {
+            $('#node-input-joltEditor').val(this.editor.getValue());
+            this.editor.destroy();
+            delete this.editor;
+        },
+        oneditcancel: function() {
+            this.editor.destroy();
+            delete this.editor;
+        }
+    });
+    
+</script>
+
+<script type="text/html" data-template-name="jolt">
+    <div class="form-row">
+        <label for="node-input-jsonvar"><i class="icon-tag"></i> Json Var</label>
+        <input type="text" id="node-input-jsonvar">
+        <input type="hidden" id="node-input-jsonvar-type">
+    </div>
+
+    <div style="height: 450px; min-height:150px;" class="node-text-editor" id="node-input-joltEditor"></div>
+</script>
+
+<script type="text/html" data-help-name="jolt">
+    <p>A simple node that transforms a json, use https://jolt-demo.appspot.com/ for testing</p>
+</script>

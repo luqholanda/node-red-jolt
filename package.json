@@ -1,0 +1,21 @@
+{
+  "name": "node-red-jolt",
+  "version": "1.0.0",
+  "description": "Jolt - JsOn Language for Transform",
+  "author": "Lucas Branco",
+  "license": "MIT",
+  "node-red": {
+    "nodes": {
+      "jolt": "jolt.js"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/luqholanda/node-red-jolt.git"
+  },
+  "keywords": [
+    "node-red",
+    "jolt"
+  ],
+  "dependencies": {}
+}
